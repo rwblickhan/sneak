@@ -1,11 +1,9 @@
-import { Message } from "@/types/types";
-
 export default defineContentScript({
   matches: ["<all_urls>"],
   main() {
     console.log("Hello content script!", { id: browser.runtime.id });
 
-    document.addEventListener("keydown", async function (event) {
+    document.addEventListener("keydown", function (event) {
       if (
         !!document.activeElement &&
         document.activeElement !== document.body
@@ -34,17 +32,22 @@ export default defineContentScript({
         links = getAllLinks();
       }
     });
-  },
+  }
 });
+
+export interface Link {
+  url: string;
+  text: string;
+}
 
 let isListening = false;
 let shouldOpenInNewTab = false;
-let links: { url: string; text: string }[] = [];
+let links: Link[] = [];
 let prefixString = "";
 
-function getAllLinks(): { url: string; text: string }[] {
+function getAllLinks(): Link[] {
   const links = document.querySelectorAll("a");
-  let linksUrls = [];
+  const linksUrls = [];
   for (const link of links) {
     const textContent = (link.textContent ?? "").trim();
     const title = (link.getAttribute("title") ?? "").trim();
@@ -53,13 +56,13 @@ function getAllLinks(): { url: string; text: string }[] {
       textContent.length > 0
         ? textContent
         : title.length > 0
-        ? title
-        : ariaLabel.length > 0
-        ? ariaLabel
-        : "";
+          ? title
+          : ariaLabel.length > 0
+            ? ariaLabel
+            : "";
     linksUrls.push({
       url: link.href,
-      text: text.toLocaleLowerCase().replace(/\s/g, ""),
+      text: text.toLocaleLowerCase().replace(/\s/g, "")
     });
   }
   console.log(JSON.stringify(linksUrls));
@@ -88,7 +91,10 @@ function appendPrefixCharacter(c: string) {
         reset();
         break;
       case 1:
-        handleSelection(prefixLinks[0].url);
+        handleSelection(prefixLinks[0].url).catch((e) => {
+          console.error(e);
+          reset();
+        });
         break;
       default:
         break;
@@ -98,8 +104,7 @@ function appendPrefixCharacter(c: string) {
 
 async function handleSelection(url: string) {
   if (shouldOpenInNewTab) {
-    const message: Message = { id: "open_link", url };
-    await browser.runtime.sendMessage(message);
+    await browser.runtime.sendMessage({ url });
   } else {
     window.location.href = url;
   }

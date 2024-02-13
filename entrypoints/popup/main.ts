@@ -1,7 +1,8 @@
-import "./style.css";
 import typescriptLogo from "@/assets/typescript.svg";
 import viteLogo from "/wxt.svg";
 import { setupCounter } from "@/components/counter";
+
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div>

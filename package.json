@@ -12,9 +12,37 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint",
+      "prettier --write --ignore-unknown"
+    ],
+    "*.tsx": [
+      "eslint",
+      "prettier --write --ignore-unknown"
+    ],
+    "*.js": [
+      "eslint",
+      "prettier --write --ignore-unknown"
+    ],
+    "*.scss": [
+      "stylelint --fix"
+    ]
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.1",
+    "@typescript-eslint/parser": "^7.0.1",
+    "eslint": "^8.56.0",
+    "husky": "^9.0.10",
+    "lint-staged": "^15.2.2",
+    "postcss-scss": "^4.0.9",
+    "prettier": "^3.2.5",
+    "sass": "^1.70.0",
+    "stylelint": "^16.2.1",
+    "stylelint-config-standard-scss": "^13.0.0",
     "typescript": "^5.3.3",
     "wxt": "^0.16.0"
   }
