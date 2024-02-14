@@ -1,8 +1,6 @@
 export default defineContentScript({
   matches: ["<all_urls>"],
   main() {
-    console.log("Hello content script!", { id: browser.runtime.id });
-
     document.addEventListener("keydown", function (event) {
       if (
         !!document.activeElement &&
