@@ -33,13 +33,20 @@ export default defineContentScript({
 
       if (event.key === "Escape" || event.key === "CommandOrControl") {
         setUiContentsAndHide("Canceling...");
-      } else if (isListening && !isWhitespace(event.key)) {
+        return;
+      }
+
+      if (isListening && !isWhitespace(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
         appendPrefixCharacter(event.key);
       } else if (
         (event.key === "s" || event.key === "S") &&
         !event.ctrlKey &&
         !event.metaKey
       ) {
+        event.preventDefault();
+        event.stopPropagation();
         isListening = true;
         shouldOpenInNewTab = event.shiftKey;
         links = LinkHelpers.getAllLinks();
