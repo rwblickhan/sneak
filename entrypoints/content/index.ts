@@ -19,12 +19,29 @@ export default defineContentScript({
     let isListening = false;
     let shouldOpenInNewTab = false;
     let links: LinkHelpers.Link[] = [];
+    let prefixLinks: LinkHelpers.Link[] = [];
     let prefixString = "";
     let resetTimer: NodeJS.Timeout | null = null;
+
+    coreUi.style.display = "none";
 
     document.addEventListener("keydown", function (event) {
       if (hasActiveElement(document)) {
         console.log(`Sneak: Ignoring due to active element...`);
+        return;
+      }
+
+      if (
+        isListening &&
+        (event.metaKey || event.ctrlKey) &&
+        !Number.isNaN(parseInt(event.key))
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        handleSelection(parseInt(event.key)).catch((e) => {
+          console.error(e);
+          reset();
+        });
         return;
       }
 
@@ -47,7 +64,7 @@ export default defineContentScript({
         return;
       }
 
-      if (isListening) {
+      if (isListening && !event.metaKey && !event.ctrlKey) {
         event.preventDefault();
         event.stopPropagation();
         appendPrefixCharacter(event.key.trim());
@@ -66,26 +83,20 @@ export default defineContentScript({
     };
 
     const hasExitCharacter = (event: KeyboardEvent) => {
-      return (
-        event.ctrlKey ||
-        event.metaKey ||
-        event.key === "CommandOrCtrl" ||
-        event.key === "Escape" ||
-        event.key === "Backspace"
-      );
+      return event.key === "Escape" || event.key === "Backspace";
     };
 
     function appendPrefixCharacter(c: string) {
       prefixString += c;
       setUiContents(prefixString);
+      prefixLinks = LinkHelpers.findPrefixLinks(links, prefixString);
       if (prefixString.length >= 2) {
-        const prefixLinks = LinkHelpers.findPrefixLinks(links, prefixString);
         switch (prefixLinks.length) {
           case 0:
             setUiContentsAndHide(`No matches for ${prefixString}!`);
             break;
           case 1:
-            handleSelection(prefixLinks[0].url).catch((e) => {
+            handleFollowLink(prefixLinks[0].url).catch((e) => {
               console.error(e);
               reset();
             });
@@ -103,7 +114,15 @@ export default defineContentScript({
       }
     }
 
-    async function handleSelection(url: string) {
+    async function handleSelection(index: number) {
+      if (1 < prefixLinks.length && 0 <= index && index < prefixLinks.length) {
+        const linkUrl = prefixLinks[index].url;
+        reset();
+        await handleFollowLink(linkUrl);
+      }
+    }
+
+    async function handleFollowLink(url: string) {
       reset();
       if (shouldOpenInNewTab) {
         await browser.runtime.sendMessage({ url });
@@ -117,6 +136,7 @@ export default defineContentScript({
       shouldOpenInNewTab = false;
       prefixString = "";
       links = [];
+      prefixLinks = [];
       coreUi.style.display = "none";
     }
 
