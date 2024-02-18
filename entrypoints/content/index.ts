@@ -23,28 +23,21 @@ export default defineContentScript({
     let resetTimer: NodeJS.Timeout | null = null;
 
     document.addEventListener("keydown", function (event) {
-      if (
-        !!document.activeElement &&
-        document.activeElement !== document.body
-      ) {
-        setUiContentsAndHide("Ignoring due to active element...");
+      if (hasActiveElement(document)) {
+        console.log(`Sneak: Ignoring due to active element...`);
         return;
       }
 
-      if (event.key === "Escape" || event.key === "CommandOrControl") {
-        setUiContentsAndHide("Canceling...");
+      if (hasControlCharacter(event)) {
+        if (isListening) {
+          setUiContentsAndHide("Canceling...");
+        } else {
+          console.log(`Sneak: Ignoring due to control character...`);
+        }
         return;
       }
 
-      if (isListening && !isWhitespace(event.key)) {
-        event.preventDefault();
-        event.stopPropagation();
-        appendPrefixCharacter(event.key);
-      } else if (
-        (event.key === "s" || event.key === "S") &&
-        !event.ctrlKey &&
-        !event.metaKey
-      ) {
+      if (!isListening && hasInitCharacter(event)) {
         event.preventDefault();
         event.stopPropagation();
         isListening = true;
@@ -52,10 +45,31 @@ export default defineContentScript({
         links = LinkHelpers.getAllLinks();
         setUiContents("");
       }
+
+      if (isListening) {
+        event.preventDefault();
+        event.stopPropagation();
+        appendPrefixCharacter(event.key.trim());
+      }
     });
 
-    const isWhitespace = (c: string) => {
-      return /^\s*$/.test(c);
+    const hasActiveElement = (document: Document) => {
+      return (
+        !!document.activeElement && document.activeElement !== document.body
+      );
+    };
+
+    const hasInitCharacter = (event: KeyboardEvent) => {
+      return event.key === "s" || event.key === "S";
+    };
+
+    const hasControlCharacter = (event: KeyboardEvent) => {
+      return (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.key === "CommandOrCtrl" ||
+        event.key === "Escape"
+      );
     };
 
     function appendPrefixCharacter(c: string) {
@@ -73,8 +87,15 @@ export default defineContentScript({
               reset();
             });
             break;
-          default:
+          default: {
+            const options = prefixLinks
+              .map((link, index) => {
+                return `Cmd-${index}: ${link.text} (${link.url})`;
+              })
+              .join("\n\n");
+            setUiContents(`${prefixString}\n\n${options}`);
             break;
+          }
         }
       }
     }
@@ -108,7 +129,7 @@ export default defineContentScript({
       }
       resetTimer = setTimeout(() => {
         reset();
-      }, 1000);
+      }, 750);
     };
   }
 });
