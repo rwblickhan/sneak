@@ -104,7 +104,7 @@ export default defineContentScript({
           default: {
             const options = prefixLinks
               .map((link, index) => {
-                return `Cmd-${index}: ${link.text} (${link.url})`;
+                return `Cmd-${index + 1}: ${link.text} (${link.url})`;
               })
               .join("\n\n");
             setUiContents(`${prefixString}\n\n${options}`);
@@ -115,8 +115,8 @@ export default defineContentScript({
     }
 
     async function handleSelection(index: number) {
-      if (1 < prefixLinks.length && 0 <= index && index < prefixLinks.length) {
-        const linkUrl = prefixLinks[index].url;
+      if (prefixLinks.length > 1 && 0 < index && index <= prefixLinks.length) {
+        const linkUrl = prefixLinks[index - 1].url;
         reset();
         await handleFollowLink(linkUrl);
       }
@@ -152,7 +152,7 @@ export default defineContentScript({
       }
       resetTimer = setTimeout(() => {
         reset();
-      }, 750);
+      }, 500);
     };
   }
 });
