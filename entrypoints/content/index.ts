@@ -28,7 +28,7 @@ export default defineContentScript({
         return;
       }
 
-      if (hasControlCharacter(event)) {
+      if (hasExitCharacter(event)) {
         if (isListening) {
           setUiContentsAndHide("Canceling...");
         } else {
@@ -44,12 +44,14 @@ export default defineContentScript({
         shouldOpenInNewTab = event.shiftKey;
         links = LinkHelpers.getAllLinks();
         setUiContents("");
+        return;
       }
 
       if (isListening) {
         event.preventDefault();
         event.stopPropagation();
         appendPrefixCharacter(event.key.trim());
+        return;
       }
     });
 
@@ -63,12 +65,13 @@ export default defineContentScript({
       return event.key === "s" || event.key === "S";
     };
 
-    const hasControlCharacter = (event: KeyboardEvent) => {
+    const hasExitCharacter = (event: KeyboardEvent) => {
       return (
         event.ctrlKey ||
         event.metaKey ||
         event.key === "CommandOrCtrl" ||
-        event.key === "Escape"
+        event.key === "Escape" ||
+        event.key === "Backspace"
       );
     };
 
