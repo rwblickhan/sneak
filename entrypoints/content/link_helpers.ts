@@ -34,6 +34,14 @@ export function findPrefixLinks(links: Link[], prefixString: string) {
       prefixLinks.push(link);
     }
   }
+  // If we didn't find any prefix strings, fallback on internal matches
+  if (prefixLinks.length === 0) {
+    for (const link of links) {
+      if (link.text.includes(prefixString)) {
+        prefixLinks.push(link);
+      }
+    }
+  }
   console.log(`Sneak: Matching URLs ${JSON.stringify(prefixLinks)}`);
   return prefixLinks;
 }
