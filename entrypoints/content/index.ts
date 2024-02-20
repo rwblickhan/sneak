@@ -5,17 +5,20 @@ export default defineContentScript({
   matches: ["<all_urls>"],
   cssInjectionMode: "ui",
   async main(ctx) {
+    const uiBody = document.createElement("div");
+    const uiMainMessage = document.createElement("p");
+    uiBody.append(uiMainMessage);
+
     const ui = await createShadowRootUi(ctx, {
       name: "sneak-tooltip",
       position: "overlay",
       alignment: "bottom-right",
       onMount(container) {
-        container.append(document.createElement("p"));
+        container.append(uiBody);
       }
     });
     ui.mount();
 
-    const coreUi = ui.uiContainer.firstElementChild as HTMLParagraphElement;
     let isListening = false;
     let shouldOpenInNewTab = false;
     let links: LinkHelpers.Link[] = [];
@@ -23,7 +26,7 @@ export default defineContentScript({
     let prefixString = "";
     let resetTimer: NodeJS.Timeout | null = null;
 
-    coreUi.style.display = "none";
+    uiBody.style.display = "none";
 
     document.addEventListener("keydown", function (event) {
       if (hasActiveElement(document)) {
@@ -47,7 +50,7 @@ export default defineContentScript({
 
       if (hasExitCharacter(event)) {
         if (isListening) {
-          setUiContentsAndHide("Canceling...");
+          setMainMessageAndHide("Canceling...");
         } else {
           console.log(`Sneak: Ignoring due to control character...`);
         }
@@ -60,11 +63,11 @@ export default defineContentScript({
         isListening = true;
         shouldOpenInNewTab = event.shiftKey;
         links = LinkHelpers.getAllLinks();
-        setUiContents("");
+        setMainMessage("");
         return;
       }
 
-      if (isListening && !event.metaKey && !event.ctrlKey) {
+      if (isListening && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
         event.preventDefault();
         event.stopPropagation();
         appendPrefixCharacter(event.key.trim());
@@ -83,17 +86,22 @@ export default defineContentScript({
     };
 
     const hasExitCharacter = (event: KeyboardEvent) => {
-      return event.key === "Escape" || event.key === "Backspace";
+      return (
+        event.key === "Escape" ||
+        event.key === "Backspace" ||
+        event.key === "Enter" ||
+        event.key === "Shift"
+      );
     };
 
     function appendPrefixCharacter(c: string) {
       prefixString += c;
-      setUiContents(prefixString);
+      setMainMessage(prefixString);
       prefixLinks = LinkHelpers.findPrefixLinks(links, prefixString);
       if (prefixString.length >= 2) {
         switch (prefixLinks.length) {
           case 0:
-            setUiContentsAndHide(`No matches for ${prefixString}!`);
+            setMainMessageAndHide(`No matches for ${prefixString}!`);
             break;
           case 1:
             handleFollowLink(prefixLinks[0].url).catch((e) => {
@@ -102,12 +110,15 @@ export default defineContentScript({
             });
             break;
           default: {
-            const options = prefixLinks
-              .map((link, index) => {
-                return `Cmd-${index + 1}: ${link.text} (${link.url})`;
-              })
-              .join("\n\n");
-            setUiContents(`${prefixString}\n\n${options}`);
+            setMainMessage(prefixString);
+            const options = prefixLinks.map(
+              (link, index) => `${index + 1}: ${link.humanText}`
+            );
+            for (const option of options.toReversed()) {
+              const p = document.createElement("p");
+              p.textContent = option;
+              uiBody.prepend(p);
+            }
             break;
           }
         }
@@ -137,16 +148,17 @@ export default defineContentScript({
       prefixString = "";
       links = [];
       prefixLinks = [];
-      coreUi.style.display = "none";
+      uiBody.style.display = "none";
     }
 
-    const setUiContents = (message: string) => {
-      coreUi.style.display = "block";
-      coreUi.textContent = `Sneak: ${message}`;
+    const setMainMessage = (message: string) => {
+      uiBody.replaceChildren(uiMainMessage);
+      uiBody.style.display = "block";
+      uiMainMessage.textContent = `Sneak: ${message}`;
     };
 
-    const setUiContentsAndHide = (message: string) => {
-      setUiContents(message);
+    const setMainMessageAndHide = (message: string) => {
+      setMainMessage(message);
       if (resetTimer) {
         clearTimeout(resetTimer);
       }

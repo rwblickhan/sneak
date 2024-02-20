@@ -1,6 +1,7 @@
 export interface Link {
   url: string;
-  text: string;
+  humanText: string;
+  searchText: string;
 }
 
 export function getAllLinks(): Link[] {
@@ -20,28 +21,27 @@ export function getAllLinks(): Link[] {
             : "";
     linksUrls.push({
       url: link.href,
-      text: text.toLocaleLowerCase().replace(/\s/g, "")
+      humanText: text,
+      searchText: text.toLocaleLowerCase().replace(/\s/g, "")
     });
   }
-  console.log(JSON.stringify(linksUrls));
   return linksUrls;
 }
 
 export function findPrefixLinks(links: Link[], prefixString: string) {
   const prefixLinks = [];
   for (const link of links) {
-    if (link.text.startsWith(prefixString)) {
+    if (link.searchText.startsWith(prefixString)) {
       prefixLinks.push(link);
     }
   }
   // If we didn't find any prefix strings, fallback on internal matches
   if (prefixLinks.length === 0) {
     for (const link of links) {
-      if (link.text.includes(prefixString)) {
+      if (link.searchText.includes(prefixString)) {
         prefixLinks.push(link);
       }
     }
   }
-  console.log(`Sneak: Matching URLs ${JSON.stringify(prefixLinks)}`);
   return prefixLinks;
 }
