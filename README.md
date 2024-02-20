@@ -1,4 +1,4 @@
-# sneak.ext
+# sneak.ext 👟
 
 > Open links without leaving the keyboard!
 
