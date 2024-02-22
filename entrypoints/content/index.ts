@@ -1,22 +1,19 @@
-import "./style.scss";
 import * as LinkHelpers from "./link_helpers";
 
 export default defineContentScript({
   matches: ["<all_urls>"],
   cssInjectionMode: "ui",
   async main(ctx) {
-    const uiBody = document.createElement("div");
-    uiBody.classList.add("sneak-body");
-    const uiMainMessage = document.createElement("p");
-    uiMainMessage.classList.add("sneak-message");
-    uiBody.append(uiMainMessage);
+    const uiContainer = createContainerelement();
+    const uiMainMessage = createMessageElement();
+    uiContainer.append(uiMainMessage);
 
     const ui = await createShadowRootUi(ctx, {
       name: "sneak-tooltip",
       position: "overlay",
       alignment: "bottom-right",
       onMount(container) {
-        container.append(uiBody);
+        container.append(uiContainer);
       }
     });
     ui.mount();
@@ -28,7 +25,7 @@ export default defineContentScript({
     let prefixString = "";
     let resetTimer: NodeJS.Timeout | null = null;
 
-    uiBody.style.display = "none";
+    uiContainer.style.display = "none";
 
     document.addEventListener("keydown", function (event) {
       if (hasActiveElement(document)) {
@@ -123,10 +120,9 @@ export default defineContentScript({
               (link, index) => `${index + 1}: ${link.humanText}`
             );
             for (const option of options.toReversed()) {
-              const p = document.createElement("p");
-              p.classList.add("sneak-message");
+              const p = createMessageElement();
               p.textContent = option;
-              uiBody.prepend(p);
+              uiContainer.prepend(p);
             }
             break;
           }
@@ -157,12 +153,12 @@ export default defineContentScript({
       prefixString = "";
       links = [];
       prefixLinks = [];
-      uiBody.style.display = "none";
+      uiContainer.style.display = "none";
     }
 
     const setMainMessage = (message: string) => {
-      uiBody.replaceChildren(uiMainMessage);
-      uiBody.style.display = "block";
+      uiContainer.replaceChildren(uiMainMessage);
+      uiContainer.style.display = "block";
       uiMainMessage.textContent = `Sneak: ${message}`;
     };
 
@@ -175,5 +171,28 @@ export default defineContentScript({
         reset();
       }, 500);
     };
+
+    function createContainerelement(): HTMLDivElement {
+      // Apply all styles directly instead of using css
+      // because for SOME reason Safari doesn't apply the stylesheet correctly on some sites
+      // (e.g. https://developer.apple.com/documentation/safariservices/safari_web_extensions/converting_a_web_extension_for_safari)
+      const div = document.createElement("div");
+      div.style.position = "fixed";
+      div.style.bottom = "0";
+      div.style.right = "0";
+      div.style.backgroundColor = "white";
+      div.style.padding = "0.5rem";
+      div.style.color = "black";
+      div.style.maxWidth = "50%";
+      // Set this to a high value so it's not hidden
+      div.style.zIndex = "100";
+      return div;
+    }
+
+    function createMessageElement(): HTMLParagraphElement {
+      const p = document.createElement("p");
+      p.style.textAlign = "end";
+      return p;
+    }
   }
 });
