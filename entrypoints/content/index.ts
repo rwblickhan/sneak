@@ -30,10 +30,9 @@ export default defineContentScript({
 
     document.addEventListener("keydown", function (event) {
       if (hasActiveElement(document)) {
+        console.log(`Sneak: Ignoring due to active element...`);
         if (hasInitCharacter(event)) {
           setMainMessageAndHide(`Ignoring due to active element...`);
-        } else {
-          console.log(`Sneak: Ignoring due to active element...`);
         }
         return;
       }
@@ -44,7 +43,7 @@ export default defineContentScript({
         !Number.isNaN(parseInt(event.key))
       ) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         handleSelection(parseInt(event.key)).catch((e) => {
           console.error(e);
           reset();
@@ -53,17 +52,28 @@ export default defineContentScript({
       }
 
       if (hasExitCharacter(event)) {
+        console.log(`Sneak: Ignoring due to control character...`);
         if (isListening) {
           setMainMessageAndHide("Canceling...");
-        } else {
-          console.log(`Sneak: Ignoring due to control character...`);
         }
+        return;
+      }
+
+      if (!isListening && hasInitCharacter(event)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        console.log("Sneak: Listening...");
+        isListening = true;
+        shouldOpenInNewTab = event.shiftKey;
+        links = LinkHelpers.getAllLinks();
+        setMainMessage("");
         return;
       }
 
       if (isListening && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
+        console.log(`Sneak: Appending new character ${event.key}`);
         appendPrefixCharacter(event.key.trim());
         return;
       }
