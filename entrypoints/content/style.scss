@@ -6,6 +6,9 @@ div {
   padding: 0.5rem;
   color: black;
   max-width: 50%;
+
+  // Set this to a high value so that it's not hidden by other elements
+  z-index: 100;
 }
 
 p {
