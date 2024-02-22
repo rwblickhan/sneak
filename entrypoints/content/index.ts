@@ -30,7 +30,11 @@ export default defineContentScript({
 
     document.addEventListener("keydown", function (event) {
       if (hasActiveElement(document)) {
-        setMainMessageAndHide(`Ignoring due to active element...`);
+        if (hasInitCharacter(event)) {
+          setMainMessageAndHide(`Ignoring due to active element...`);
+        } else {
+          console.log(`Sneak: Ignoring due to active element...`);
+        }
         return;
       }
 
@@ -54,16 +58,6 @@ export default defineContentScript({
         } else {
           console.log(`Sneak: Ignoring due to control character...`);
         }
-        return;
-      }
-
-      if (!isListening && hasInitCharacter(event)) {
-        event.preventDefault();
-        event.stopPropagation();
-        isListening = true;
-        shouldOpenInNewTab = event.shiftKey;
-        links = LinkHelpers.getAllLinks();
-        setMainMessage("");
         return;
       }
 
