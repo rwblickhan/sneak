@@ -1,4 +1,4 @@
-div {
+.sneak-body {
   position: fixed;
   bottom: 0;
   right: 0;
@@ -11,6 +11,6 @@ div {
   z-index: 100;
 }
 
-p {
+.sneak-message {
   text-align: end;
 }

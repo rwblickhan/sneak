@@ -6,7 +6,9 @@ export default defineContentScript({
   cssInjectionMode: "ui",
   async main(ctx) {
     const uiBody = document.createElement("div");
+    uiBody.classList.add("sneak-body");
     const uiMainMessage = document.createElement("p");
+    uiMainMessage.classList.add("sneak-message");
     uiBody.append(uiMainMessage);
 
     const ui = await createShadowRootUi(ctx, {
@@ -122,6 +124,7 @@ export default defineContentScript({
             );
             for (const option of options.toReversed()) {
               const p = document.createElement("p");
+              p.classList.add("sneak-message");
               p.textContent = option;
               uiBody.prepend(p);
             }
