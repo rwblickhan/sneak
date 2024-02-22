@@ -37,7 +37,7 @@ export default defineContentScript({
 
       if (
         isListening &&
-        (event.metaKey || event.ctrlKey) &&
+        (event.metaKey || event.ctrlKey || event.altKey) &&
         !Number.isNaN(parseInt(event.key))
       ) {
         event.preventDefault();
