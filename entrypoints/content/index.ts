@@ -2,7 +2,6 @@ import * as LinkHelpers from "./link_helpers";
 
 export default defineContentScript({
   matches: ["<all_urls>"],
-  cssInjectionMode: "ui",
   async main(ctx) {
     const uiContainer = createContainerelement();
     const uiMainMessage = createMessageElement();
