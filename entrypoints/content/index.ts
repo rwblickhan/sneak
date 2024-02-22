@@ -30,7 +30,7 @@ export default defineContentScript({
 
     document.addEventListener("keydown", function (event) {
       if (hasActiveElement(document)) {
-        console.log(`Sneak: Ignoring due to active element...`);
+        setMainMessageAndHide(`Sneak: Ignoring due to active element...`);
         return;
       }
 
