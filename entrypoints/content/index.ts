@@ -52,9 +52,11 @@ export default defineContentScript({
       }
 
       if (hasExitCharacter(event)) {
-        console.log(`Sneak: Ignoring due to control character...`);
         if (isListening) {
           setMainMessageAndHide("Canceling...");
+          console.log(`Sneak: Canceling due to control character...`);
+        } else {
+          console.log(`Sneak: Ignoring due to control character...`);
         }
         return;
       }
