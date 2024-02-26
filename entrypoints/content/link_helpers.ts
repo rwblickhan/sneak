@@ -1,31 +1,43 @@
 export interface Link {
-  url: string;
+  element: HTMLElement;
   humanText: string;
   searchText: string;
 }
 
 export function getAllLinks(): Link[] {
-  const links = document.querySelectorAll("a");
-  const linksUrls = [];
-  for (const link of links) {
-    const textContent = (link.textContent ?? "").trim();
-    const title = (link.getAttribute("title") ?? "").trim();
-    const ariaLabel = (link.getAttribute("aria-label") ?? "").trim();
-    const text =
-      textContent.length > 0
-        ? textContent
+  const links: Link[] = [];
+
+  const aElements = document.querySelectorAll("a");
+  const buttonElements = document.querySelectorAll("button");
+
+  aElements.forEach((element) => {
+    links.push(parseElement(element));
+  });
+
+  buttonElements.forEach((element) => {
+    links.push(parseElement(element));
+  });
+
+  return links;
+}
+
+function parseElement(element: HTMLElement): Link {
+  const textContent = (element.textContent ?? "").trim();
+  const ariaLabel = (element.getAttribute("aria-label") ?? "").trim();
+  const title = (element.getAttribute("title") ?? "").trim();
+  const text =
+    textContent.length > 0
+      ? textContent
+      : ariaLabel.length > 0
+        ? ariaLabel
         : title.length > 0
           ? title
-          : ariaLabel.length > 0
-            ? ariaLabel
-            : "";
-    linksUrls.push({
-      url: link.href,
-      humanText: text,
-      searchText: text.toLocaleLowerCase().replace(/\s/g, "")
-    });
-  }
-  return linksUrls;
+          : "";
+  return {
+    element: element,
+    humanText: text,
+    searchText: text.toLocaleLowerCase().replace(/\s/g, "")
+  };
 }
 
 export function findPrefixLinks(links: Link[], prefixString: string) {

@@ -42,10 +42,7 @@ export default defineContentScript({
       ) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        handleSelection(parseInt(event.key)).catch((e) => {
-          console.error(e);
-          reset();
-        });
+        handleSelection(parseInt(event.key));
         return;
       }
 
@@ -65,6 +62,7 @@ export default defineContentScript({
         console.log("Sneak: Listening...");
         isListening = true;
         shouldOpenInNewTab = event.shiftKey;
+        console.log(`Should shouldOpenInNewTab: ${shouldOpenInNewTab}`);
         links = LinkHelpers.getAllLinks();
         setMainMessage("");
         return;
@@ -108,10 +106,7 @@ export default defineContentScript({
             setMainMessageAndHide(`No matches for ${prefixString}!`);
             break;
           case 1:
-            handleFollowLink(prefixLinks[0].url).catch((e) => {
-              console.error(e);
-              reset();
-            });
+            handleSelection(1);
             break;
           default: {
             setMainMessage(prefixString);
@@ -129,20 +124,14 @@ export default defineContentScript({
       }
     }
 
-    async function handleSelection(index: number) {
-      if (prefixLinks.length > 1 && 0 < index && index <= prefixLinks.length) {
-        const linkUrl = prefixLinks[index - 1].url;
+    function handleSelection(index: number) {
+      if (0 < index && index <= prefixLinks.length) {
+        prefixLinks[index - 1].element.dispatchEvent(
+          new MouseEvent("click", {
+            metaKey: shouldOpenInNewTab
+          })
+        );
         reset();
-        await handleFollowLink(linkUrl);
-      }
-    }
-
-    async function handleFollowLink(url: string) {
-      reset();
-      if (shouldOpenInNewTab) {
-        await browser.runtime.sendMessage({ url });
-      } else {
-        window.location.href = url;
       }
     }
 
