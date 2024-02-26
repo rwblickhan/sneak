@@ -126,11 +126,17 @@ export default defineContentScript({
 
     function handleSelection(index: number) {
       if (0 < index && index <= prefixLinks.length) {
-        prefixLinks[index - 1].element.dispatchEvent(
-          new MouseEvent("click", {
-            metaKey: shouldOpenInNewTab
-          })
-        );
+        console.log("Sneak: Selecting...");
+        const selection = prefixLinks[index - 1];
+        if (selection.element instanceof HTMLInputElement) {
+          selection.element.focus();
+        } else {
+          selection.element.dispatchEvent(
+            new MouseEvent("click", {
+              metaKey: shouldOpenInNewTab
+            })
+          );
+        }
         reset();
       }
     }

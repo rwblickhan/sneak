@@ -9,12 +9,17 @@ export function getAllLinks(): Link[] {
 
   const aElements = document.querySelectorAll("a");
   const buttonElements = document.querySelectorAll("button");
+  const inputElements = document.querySelectorAll("input");
 
   aElements.forEach((element) => {
     links.push(parseElement(element));
   });
 
   buttonElements.forEach((element) => {
+    links.push(parseElement(element));
+  });
+
+  inputElements.forEach((element) => {
     links.push(parseElement(element));
   });
 
