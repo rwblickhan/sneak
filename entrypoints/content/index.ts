@@ -28,11 +28,13 @@ export default defineContentScript({
     uiContainer.style.display = "none";
 
     document.addEventListener("keydown", function (event) {
-      if (hasExitCharacter(event)) {
+      if (hasCancelCharacter(event) || hasFinishCharacter(event)) {
         if (isListening) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          setMainMessageAndHide("Canceling...");
+          if (hasCancelCharacter(event)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+          setMainMessageAndHide("Canceling...", hasCancelCharacter(event));
           console.log(`Sneak: Canceling due to control character...`);
         } else {
           console.log(`Sneak: Ignoring due to control character...`);
@@ -57,7 +59,7 @@ export default defineContentScript({
       if (hasActiveElement(document)) {
         console.log(`Sneak: Ignoring due to active element...`);
         if (hasInitCharacter(event)) {
-          setMainMessageAndHide(`Ignoring due to active element...`);
+          setMainMessageAndHide(`Ignoring due to active element...`, false);
         }
         return;
       }
@@ -93,36 +95,31 @@ export default defineContentScript({
       return event.key === "s";
     };
 
-    const hasExitCharacter = (event: KeyboardEvent) => {
-      return (
-        event.key === "Escape" ||
-        event.key === "Backspace" ||
-        event.key === "Enter" ||
-        event.key === "Shift"
-      );
+    const hasFinishCharacter = (event: KeyboardEvent) => {
+      return event.key === "Enter";
+    };
+
+    const hasCancelCharacter = (event: KeyboardEvent) => {
+      return event.key === "Escape";
     };
 
     function appendPrefixCharacter(c: string) {
+      if (prefixString.length === 2) {
+        return;
+      }
+
       prefixString += c;
       setMainMessage(prefixString);
       prefixLinks = LinkHelpers.findPrefixLinks(links, prefixString);
       selectionIndex = 0;
 
       if (prefixLinks.length === 0) {
-        setMainMessageAndHide(`No matches for ${prefixString}!`);
+        setMainMessageAndHide(`No matches for ${prefixString}!`, false);
         return;
       }
 
-      switch (prefixString.length) {
-        case 0:
-        case 1:
-          return;
-        case 2:
-          handleFocus(0);
-          break;
-        default:
-          setMainMessageAndHide(`No matches for ${prefixString}!`);
-          return;
+      if (prefixString.length === 2) {
+        handleFocus(0);
       }
     }
 
@@ -164,30 +161,28 @@ export default defineContentScript({
       prefixLinks[index].element.blur();
     }
 
-    function reset() {
-      handleBlur(selectionIndex);
-      isListening = false;
-      shouldOpenInNewTab = false;
-      prefixString = "";
-      links = [];
-      prefixLinks = [];
-      selectionIndex = 0;
-      uiContainer.style.display = "none";
-    }
-
     const setMainMessage = (message: string) => {
       uiContainer.replaceChildren(uiMainMessage);
       uiContainer.style.display = "block";
       uiMainMessage.textContent = `Sneak: ${message}`;
     };
 
-    const setMainMessageAndHide = (message: string) => {
+    const setMainMessageAndHide = (message: string, resetFocus: boolean) => {
+      if (resetFocus) {
+        handleBlur(selectionIndex);
+      }
       setMainMessage(message);
       if (resetTimer) {
         clearTimeout(resetTimer);
       }
       resetTimer = setTimeout(() => {
-        reset();
+        isListening = false;
+        shouldOpenInNewTab = false;
+        prefixString = "";
+        links = [];
+        prefixLinks = [];
+        selectionIndex = 0;
+        uiContainer.style.display = "none";
       }, 500);
     };
 
