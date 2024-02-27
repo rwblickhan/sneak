@@ -33,8 +33,11 @@ export default defineContentScript({
           if (hasCancelCharacter(event)) {
             event.preventDefault();
             event.stopImmediatePropagation();
+            if (document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur();
+            }
           }
-          setMainMessageAndHide("Canceling...", hasCancelCharacter(event));
+          setMainMessageAndHide("Canceling...");
           console.log(`Sneak: Canceling due to control character...`);
         } else {
           console.log(`Sneak: Ignoring due to control character...`);
@@ -59,7 +62,7 @@ export default defineContentScript({
       if (hasActiveElement(document)) {
         console.log(`Sneak: Ignoring due to active element...`);
         if (hasInitCharacter(event)) {
-          setMainMessageAndHide(`Ignoring due to active element...`, false);
+          setMainMessageAndHide(`Ignoring due to active element...`);
         }
         return;
       }
@@ -114,7 +117,7 @@ export default defineContentScript({
       selectionIndex = 0;
 
       if (prefixLinks.length === 0) {
-        setMainMessageAndHide(`No matches for ${prefixString}!`, false);
+        setMainMessageAndHide(`No matches for ${prefixString}!`);
         return;
       }
 
@@ -151,26 +154,13 @@ export default defineContentScript({
       uiContainer.prepend(p);
     }
 
-    function handleBlur(index: number) {
-      if (!(0 <= index && index < prefixLinks.length)) {
-        console.error(
-          `Sneak: found invalid index: ${index}; only had ${prefixLinks.length} options`
-        );
-        return;
-      }
-      prefixLinks[index].element.blur();
-    }
-
     const setMainMessage = (message: string) => {
       uiContainer.replaceChildren(uiMainMessage);
       uiContainer.style.display = "block";
       uiMainMessage.textContent = `Sneak: ${message}`;
     };
 
-    const setMainMessageAndHide = (message: string, resetFocus: boolean) => {
-      if (resetFocus) {
-        handleBlur(selectionIndex);
-      }
+    const setMainMessageAndHide = (message: string) => {
       setMainMessage(message);
       if (resetTimer) {
         clearTimeout(resetTimer);
