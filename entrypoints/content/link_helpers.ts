@@ -41,7 +41,11 @@ function parseElement(element: HTMLElement): Link {
   return {
     element: element,
     humanText: text,
-    searchText: text.toLocaleLowerCase().replace(/\s/g, "")
+    searchText: text
+      .toLocaleLowerCase()
+      .replace(/\s/g, "")
+      .replace(";", "")
+      .replace(",", "")
   };
 }
 
@@ -60,5 +64,6 @@ export function findPrefixLinks(links: Link[], prefixString: string) {
       }
     }
   }
+  console.log(JSON.stringify(prefixLinks, null, 2));
   return prefixLinks;
 }

@@ -3,7 +3,7 @@ import * as LinkHelpers from "./link_helpers";
 export default defineContentScript({
   matches: ["<all_urls>"],
   async main(ctx) {
-    const uiContainer = createContainerelement();
+    const uiContainer = createContainerElement();
     const uiMainMessage = createMessageElement();
     uiContainer.append(uiMainMessage);
 
@@ -23,35 +23,41 @@ export default defineContentScript({
     let prefixLinks: LinkHelpers.Link[] = [];
     let prefixString = "";
     let resetTimer: NodeJS.Timeout | null = null;
+    let selectionIndex = 0;
 
     uiContainer.style.display = "none";
 
     document.addEventListener("keydown", function (event) {
-      if (hasActiveElement(document)) {
-        console.log(`Sneak: Ignoring due to active element...`);
-        if (hasInitCharacter(event)) {
-          setMainMessageAndHide(`Ignoring due to active element...`);
-        }
-        return;
-      }
-
-      if (
-        isListening &&
-        (event.metaKey || event.ctrlKey || event.altKey) &&
-        !Number.isNaN(parseInt(event.key))
-      ) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        handleSelection(parseInt(event.key));
-        return;
-      }
-
       if (hasExitCharacter(event)) {
         if (isListening) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
           setMainMessageAndHide("Canceling...");
           console.log(`Sneak: Canceling due to control character...`);
         } else {
           console.log(`Sneak: Ignoring due to control character...`);
+        }
+        return;
+      }
+
+      if (isListening && event.key === ";") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        handleForwardSelection();
+        return;
+      }
+
+      if (isListening && event.key === ",") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        handleBackwardSelection();
+        return;
+      }
+
+      if (hasActiveElement(document)) {
+        console.log(`Sneak: Ignoring due to active element...`);
+        if (hasInitCharacter(event)) {
+          setMainMessageAndHide(`Ignoring due to active element...`);
         }
         return;
       }
@@ -84,7 +90,7 @@ export default defineContentScript({
     };
 
     const hasInitCharacter = (event: KeyboardEvent) => {
-      return event.key === "s" || event.key === "S";
+      return event.key === "s";
     };
 
     const hasExitCharacter = (event: KeyboardEvent) => {
@@ -100,53 +106,72 @@ export default defineContentScript({
       prefixString += c;
       setMainMessage(prefixString);
       prefixLinks = LinkHelpers.findPrefixLinks(links, prefixString);
-      if (prefixString.length >= 2) {
-        switch (prefixLinks.length) {
-          case 0:
-            setMainMessageAndHide(`No matches for ${prefixString}!`);
-            break;
-          case 1:
-            handleSelection(1);
-            break;
-          default: {
-            setMainMessage(prefixString);
-            const options = prefixLinks.map(
-              (link, index) => `${index + 1}: ${link.humanText}`
-            );
-            for (const option of options.toReversed()) {
-              const p = createMessageElement();
-              p.textContent = option;
-              uiContainer.prepend(p);
-            }
-            break;
-          }
-        }
+      selectionIndex = 0;
+
+      if (prefixLinks.length === 0) {
+        setMainMessageAndHide(`No matches for ${prefixString}!`);
+        return;
+      }
+
+      switch (prefixString.length) {
+        case 0:
+        case 1:
+          return;
+        case 2:
+          handleFocus(0);
+          break;
+        default:
+          setMainMessageAndHide(`No matches for ${prefixString}!`);
+          return;
       }
     }
 
-    function handleSelection(index: number) {
-      if (0 < index && index <= prefixLinks.length) {
-        console.log("Sneak: Selecting...");
-        const selection = prefixLinks[index - 1];
-        if (selection.element instanceof HTMLInputElement) {
-          selection.element.focus();
-        } else {
-          selection.element.dispatchEvent(
-            new MouseEvent("click", {
-              metaKey: shouldOpenInNewTab
-            })
-          );
-        }
-        reset();
+    function mod(n: number, m: number) {
+      return ((n % m) + m) % m;
+    }
+
+    function handleForwardSelection() {
+      selectionIndex = mod(selectionIndex + 1, prefixLinks.length);
+      handleFocus(selectionIndex);
+    }
+
+    function handleBackwardSelection() {
+      selectionIndex = mod(selectionIndex - 1, prefixLinks.length);
+      handleFocus(selectionIndex);
+    }
+
+    function handleFocus(index: number) {
+      if (!(0 <= index && index < prefixLinks.length)) {
+        console.error(
+          `Sneak: found invalid index: ${index}; only had ${prefixLinks.length} options`
+        );
+        return;
       }
+      prefixLinks[index].element.focus();
+      setMainMessage(prefixString);
+      const p = createMessageElement();
+      p.textContent = prefixLinks[index].humanText;
+      uiContainer.prepend(p);
+    }
+
+    function handleBlur(index: number) {
+      if (!(0 <= index && index < prefixLinks.length)) {
+        console.error(
+          `Sneak: found invalid index: ${index}; only had ${prefixLinks.length} options`
+        );
+        return;
+      }
+      prefixLinks[index].element.blur();
     }
 
     function reset() {
+      handleBlur(selectionIndex);
       isListening = false;
       shouldOpenInNewTab = false;
       prefixString = "";
       links = [];
       prefixLinks = [];
+      selectionIndex = 0;
       uiContainer.style.display = "none";
     }
 
@@ -166,7 +191,7 @@ export default defineContentScript({
       }, 500);
     };
 
-    function createContainerelement(): HTMLDivElement {
+    function createContainerElement(): HTMLDivElement {
       // Apply all styles directly instead of using css
       // because for SOME reason Safari doesn't apply the stylesheet correctly on some sites
       // (e.g. https://developer.apple.com/documentation/safariservices/safari_web_extensions/converting_a_web_extension_for_safari)
@@ -177,7 +202,7 @@ export default defineContentScript({
       div.style.backgroundColor = "white";
       div.style.padding = "0.5rem";
       div.style.color = "black";
-      div.style.maxWidth = "50%";
+      div.style.maxWidth = "25%";
       // Set this to a high value so it's not hidden
       div.style.zIndex = "100";
       return div;
