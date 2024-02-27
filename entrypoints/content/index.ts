@@ -107,7 +107,7 @@ export default defineContentScript({
     };
 
     function appendPrefixCharacter(c: string) {
-      if (prefixString.length === 2) {
+      if (prefixString.length > 2) {
         return;
       }
 
