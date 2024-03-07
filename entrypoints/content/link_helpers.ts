@@ -52,16 +52,8 @@ function parseElement(element: HTMLElement): Link {
 export function findPrefixLinks(links: Link[], prefixString: string) {
   const prefixLinks = [];
   for (const link of links) {
-    if (link.searchText.startsWith(prefixString)) {
+    if (link.searchText.includes(prefixString)) {
       prefixLinks.push(link);
-    }
-  }
-  // If we didn't find any prefix strings, fallback on internal matches
-  if (prefixLinks.length === 0) {
-    for (const link of links) {
-      if (link.searchText.includes(prefixString)) {
-        prefixLinks.push(link);
-      }
     }
   }
   console.log(JSON.stringify(prefixLinks, null, 2));
