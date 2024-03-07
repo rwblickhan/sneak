@@ -50,12 +50,9 @@ function parseElement(element: HTMLElement): Link {
 }
 
 export function findPrefixLinks(links: Link[], prefixString: string) {
-  const prefixLinks = [];
-  for (const link of links) {
-    if (link.searchText.includes(prefixString)) {
-      prefixLinks.push(link);
-    }
-  }
+  const prefixLinks = links.filter((link) =>
+    link.searchText.includes(prefixString)
+  );
   console.log(JSON.stringify(prefixLinks, null, 2));
   return prefixLinks;
 }
