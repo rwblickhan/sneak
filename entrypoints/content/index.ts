@@ -4,7 +4,9 @@ export default defineContentScript({
   matches: ["<all_urls>"],
   async main(ctx) {
     const uiContainer = createContainerElement();
+    const uiSecondaryMessage = createMessageElement();
     const uiMainMessage = createMessageElement();
+    uiContainer.append(uiSecondaryMessage);
     uiContainer.append(uiMainMessage);
 
     const ui = await createShadowRootUi(ctx, {
@@ -75,7 +77,7 @@ export default defineContentScript({
         shouldOpenInNewTab = event.shiftKey;
         console.log(`Should shouldOpenInNewTab: ${shouldOpenInNewTab}`);
         links = LinkHelpers.getAllLinks();
-        setMainMessage("");
+        setMessage("");
         return;
       }
 
@@ -112,9 +114,8 @@ export default defineContentScript({
       }
 
       prefixString += c;
-      setMainMessage(prefixString);
+      setMessage(prefixString);
       prefixLinks = LinkHelpers.findPrefixLinks(links, prefixString);
-      selectionIndex = 0;
 
       if (prefixLinks.length === 0) {
         setMainMessageAndHide(`No matches for ${prefixString}!`);
@@ -148,20 +149,26 @@ export default defineContentScript({
         return;
       }
       prefixLinks[index].element.focus();
-      setMainMessage(prefixString);
+      setMessage(prefixString, `${index + 1} of ${prefixLinks.length} matches`);
       const p = createMessageElement();
       p.textContent = prefixLinks[index].humanText;
       uiContainer.prepend(p);
     }
 
-    const setMainMessage = (message: string) => {
-      uiContainer.replaceChildren(uiMainMessage);
+    const setMessage = (message: string, secondaryMessage?: string) => {
+      uiContainer.replaceChildren(uiSecondaryMessage, uiMainMessage);
+      if (secondaryMessage) {
+        uiSecondaryMessage.style.display = "block";
+        uiSecondaryMessage.textContent = secondaryMessage;
+      } else {
+        uiSecondaryMessage.style.display = "none";
+      }
       uiContainer.style.display = "block";
       uiMainMessage.textContent = `Sneak: ${message}`;
     };
 
     const setMainMessageAndHide = (message: string) => {
-      setMainMessage(message);
+      setMessage(message);
       if (resetTimer) {
         clearTimeout(resetTimer);
       }
