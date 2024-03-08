@@ -30,20 +30,16 @@ export default defineContentScript({
     uiContainer.style.display = "none";
 
     document.addEventListener("keydown", function (event) {
-      if (hasCancelCharacter(event) || hasFinishCharacter(event)) {
-        if (isListening) {
-          if (hasCancelCharacter(event)) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            if (document.activeElement instanceof HTMLElement) {
-              document.activeElement.blur();
-            }
-          }
-          setMainMessageAndHide("Canceling...");
-          console.log(`Sneak: Canceling due to control character...`);
-        } else {
-          console.log(`Sneak: Ignoring due to control character...`);
+      if (hasFinishCharacter(event)) {
+        close();
+        return;
+      }
+
+      if (hasCancelCharacter(event)) {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
         }
+        close();
         return;
       }
 
@@ -89,6 +85,15 @@ export default defineContentScript({
         return;
       }
     });
+
+    const close = () => {
+      if (isListening) {
+        setMainMessageAndHide("Closing...");
+        console.log(`Sneak: Closing due to control character...`);
+      } else {
+        console.log(`Sneak: Ignoring due to control character...`);
+      }
+    };
 
     const hasActiveElement = (document: Document) => {
       return (
