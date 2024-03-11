@@ -30,7 +30,14 @@ export default defineContentScript({
     uiContainer.style.display = "none";
 
     document.addEventListener("keydown", function (event) {
-      if (hasFinishCharacter(event)) {
+      if (isListening && hasFinishCharacter(event)) {
+        if (
+          !(document.activeElement instanceof HTMLAnchorElement) &&
+          !(document.activeElement instanceof HTMLButtonElement)
+        ) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
         close();
         return;
       }
@@ -57,6 +64,14 @@ export default defineContentScript({
         return;
       }
 
+      if (isListening && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        console.log(`Sneak: Appending new character ${event.key}`);
+        appendPrefixCharacter(event.key.trim());
+        return;
+      }
+
       if (hasActiveElement(document)) {
         console.log(`Sneak: Ignoring due to active element...`);
         if (hasInitCharacter(event)) {
@@ -74,14 +89,6 @@ export default defineContentScript({
         console.log(`Should shouldOpenInNewTab: ${shouldOpenInNewTab}`);
         links = LinkHelpers.getAllLinks();
         setMessage("");
-        return;
-      }
-
-      if (isListening && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        console.log(`Sneak: Appending new character ${event.key}`);
-        appendPrefixCharacter(event.key.trim());
         return;
       }
     });
@@ -114,10 +121,6 @@ export default defineContentScript({
     };
 
     function appendPrefixCharacter(c: string) {
-      if (prefixString.length > 2) {
-        return;
-      }
-
       prefixString += c;
       setMessage(prefixString);
       prefixLinks = LinkHelpers.findPrefixLinks(links, prefixString);
@@ -127,7 +130,7 @@ export default defineContentScript({
         return;
       }
 
-      if (prefixString.length === 2) {
+      if (prefixString.length >= 2) {
         handleFocus(0);
       }
     }
