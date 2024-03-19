@@ -50,17 +50,14 @@ export default defineContentScript({
         return;
       }
 
-      if (isListening && event.key === ";") {
+      if (isListening && event.key === "Tab") {
         event.preventDefault();
         event.stopImmediatePropagation();
-        handleForwardSelection();
-        return;
-      }
-
-      if (isListening && event.key === ",") {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        handleBackwardSelection();
+        if (event.shiftKey) {
+          handleBackwardSelection();
+        } else {
+          handleForwardSelection();
+        }
         return;
       }
 
