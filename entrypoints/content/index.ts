@@ -61,7 +61,13 @@ export default defineContentScript({
         return;
       }
 
-      if (isListening && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+      if (
+        isListening &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !hasInitCharacter(event)
+      ) {
         event.preventDefault();
         event.stopImmediatePropagation();
         console.log(`Sneak: Appending new character ${event.key}`);
@@ -77,9 +83,10 @@ export default defineContentScript({
         return;
       }
 
-      if (!isListening && hasInitCharacter(event)) {
+      if (hasInitCharacter(event)) {
         event.preventDefault();
         event.stopImmediatePropagation();
+        reset(0);
         console.log("Sneak: Listening...");
         isListening = true;
         globalDirection = hasForwardInitCharacter(event)
@@ -182,18 +189,30 @@ export default defineContentScript({
 
     const setMainMessageAndHide = (message: string) => {
       setMessage(message);
-      if (resetTimer) {
-        clearTimeout(resetTimer);
-      }
-      resetTimer = setTimeout(() => {
+      reset(500);
+    };
+
+    function reset(timeout?: number) {
+      const onReset = () => {
         isListening = false;
         prefixString = "";
         links = [];
         prefixLinks = [];
         selectionIndex = 0;
         uiContainer.style.display = "none";
-      }, 500);
-    };
+      };
+
+      if (resetTimer) {
+        clearTimeout(resetTimer);
+      }
+
+      if (timeout) {
+        resetTimer = setTimeout(onReset, timeout);
+      } else {
+        // Handle this immediately, so that we can hide and then show again in the same pass
+        onReset();
+      }
+    }
 
     function createContainerElement(): HTMLDivElement {
       // Apply all styles directly instead of using css
