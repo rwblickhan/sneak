@@ -20,7 +20,7 @@ export default defineContentScript({
     ui.mount();
 
     let isListening = false;
-    let shouldOpenInNewTab = false;
+    let globalDirection: "forward" | "backward" = "forward";
     let links: LinkHelpers.Link[] = [];
     let prefixLinks: LinkHelpers.Link[] = [];
     let prefixString = "";
@@ -53,11 +53,11 @@ export default defineContentScript({
       if (isListening && event.key === "Tab") {
         event.preventDefault();
         event.stopImmediatePropagation();
+        let direction = globalDirection;
         if (event.shiftKey) {
-          handleBackwardSelection();
-        } else {
-          handleForwardSelection();
+          direction = direction === "forward" ? "backward" : "forward";
         }
+        handleMoveSelection(direction);
         return;
       }
 
@@ -82,8 +82,9 @@ export default defineContentScript({
         event.stopImmediatePropagation();
         console.log("Sneak: Listening...");
         isListening = true;
-        shouldOpenInNewTab = event.shiftKey;
-        console.log(`Should shouldOpenInNewTab: ${shouldOpenInNewTab}`);
+        globalDirection = hasForwardInitCharacter(event)
+          ? "forward"
+          : "backward";
         links = LinkHelpers.getAllLinks();
         setMessage("");
         return;
@@ -106,7 +107,15 @@ export default defineContentScript({
     };
 
     const hasInitCharacter = (event: KeyboardEvent) => {
-      return event.key === "s";
+      return hasForwardInitCharacter(event) || hasBackwardInitCharacter(event);
+    };
+
+    const hasForwardInitCharacter = (event: KeyboardEvent) => {
+      return event.key === "/";
+    };
+
+    const hasBackwardInitCharacter = (event: KeyboardEvent) => {
+      return event.key === "?";
     };
 
     const hasFinishCharacter = (event: KeyboardEvent) => {
@@ -128,7 +137,7 @@ export default defineContentScript({
       }
 
       if (prefixString.length >= 2) {
-        handleFocus(0);
+        handleFocus(globalDirection === "forward" ? 0 : prefixLinks.length - 1);
       }
     }
 
@@ -136,13 +145,12 @@ export default defineContentScript({
       return ((n % m) + m) % m;
     }
 
-    function handleForwardSelection() {
-      selectionIndex = mod(selectionIndex + 1, prefixLinks.length);
-      handleFocus(selectionIndex);
-    }
-
-    function handleBackwardSelection() {
-      selectionIndex = mod(selectionIndex - 1, prefixLinks.length);
+    function handleMoveSelection(direction: "forward" | "backward") {
+      if (direction === "forward") {
+        selectionIndex = mod(selectionIndex + 1, prefixLinks.length);
+      } else {
+        selectionIndex = mod(selectionIndex - 1, prefixLinks.length);
+      }
       handleFocus(selectionIndex);
     }
 
@@ -179,7 +187,6 @@ export default defineContentScript({
       }
       resetTimer = setTimeout(() => {
         isListening = false;
-        shouldOpenInNewTab = false;
         prefixString = "";
         links = [];
         prefixLinks = [];
